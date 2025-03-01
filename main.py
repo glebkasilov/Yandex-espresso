@@ -1,14 +1,26 @@
 import sys
+import os
 import sqlite3
+
 from PyQt6 import uic
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QTableWidgetItem,
-                             QDialog, QMessageBox, QHeaderView)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QTableWidgetItem,
+    QDialog,
+    QMessageBox,
+    QHeaderView
+)
+
+from UI.main_ui import Ui_MainWindow
+from UI.addEditCoffeeForm_ui import Ui_Dialog
 
 
-class AddEditCoffeeForm(QDialog):
+class AddEditCoffeeForm(QDialog, Ui_Dialog):
     def __init__(self, conn, coffee_id=None):
         super().__init__()
-        uic.loadUi('addEditCoffeeForm.ui', self)
+        self.setupUi(self)
+
         self.conn = conn
         self.coffee_id = coffee_id
         if self.coffee_id:
@@ -79,17 +91,23 @@ class AddEditCoffeeForm(QDialog):
             self.conn.rollback()
 
 
-class CoffeeApp(QMainWindow):
+class CoffeeApp(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('main.ui', self)
-        self.conn = sqlite3.connect('coffee.sqlite')
+        self.setupUi(self)
+
         self.addButton.clicked.connect(self.add_coffee)
         self.editButton.clicked.connect(self.edit_coffee)
-        self.tableWidget.doubleClicked.connect(self.edit_coffee)
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, 'data', 'coffee.sqlite')
+        self.conn = sqlite3.connect(db_path)
+
         self.load_data()
 
     def load_data(self):
+        if self.conn is None:
+            raise Exception("Подключение к базе данных отсутствует")
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM coffee")
         data = cursor.fetchall()
